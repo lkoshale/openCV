@@ -83,7 +83,7 @@ if test :
     print(trainX.shape)
     print(trainY.shape)
 
-    clf = GradientBoostingClassifier(n_estimators=100,learning_rate=0.1,verbose=True)
+    clf = GradientBoostingClassifier(n_estimators=200,learning_rate=0.03,verbose=True)
     clf.fit(trainX,trainY)
 
     print(clf.score(testX,testY))
