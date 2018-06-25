@@ -9,9 +9,12 @@ import cv2
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
-from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import train_test_split
 import sys
+from sklearn.externals import joblib
+
+from sklearn.svm import SVR
 
 
 #resize images and create train dataset
@@ -32,17 +35,17 @@ NUM_OF_CAT = 6
 
 def categorise_data(name):
     if name == 'bed' :
-        return 1
+        return 100
     elif name == 'food_packet':
-        return 2
+        return 200
     elif name == 'plants':
-        return 3
+        return 300
     elif name == 'fish_tank':
-        return 4
+        return 400
     elif name == 'shampoo':
-        return 5
+        return 500
     elif name == 'bowl':
-        return 6
+        return 600
     else :
         sys.exit(0)
 
@@ -75,7 +78,7 @@ if test :
         name = 'data\\'+str(i)
         list_img.append(name)
 
-    X = create_image_mat(list_img,200,200)
+    X = create_image_mat(list_img,75,75)
     Y = create_taget_matrix(target_list)
 
     trainX,testX,trainY,testY = train_test_split(X,Y,random_state=42)
@@ -83,9 +86,14 @@ if test :
     print(trainX.shape)
     print(trainY.shape)
 
-    clf = GradientBoostingClassifier(n_estimators=200,learning_rate=0.03,verbose=True)
+    clf = GradientBoostingRegressor(n_estimators=500,learning_rate=0.03,verbose=True)
+    # clf = SVR(gamma=0.001)
     clf.fit(trainX,trainY)
 
+
     print(clf.score(testX,testY))
+
+
+    joblib.dump(clf, 'gbtree.pkl')
 
     # print(trainY)
