@@ -1,0 +1,230 @@
+PayPal LVM
+Email Blocks
+
+v1l3 Mar 2018
+
+
+
+*******************
+
+H1 - STANDARD HERO BLOCK W/ EMBEDDED HEADLINE
+
+  
+
+CONGRATULATIONS
+IR R
+
+»-
+
+i "
+N3
+\
+N
+
+ 
+    
+
+¥
+|
+
+|
+
+I
+
+You recently signed up for a PayPal account, but your account was never quite finished. Completing your
+
+ 
+
+Confirm your email to start transacting.
+
+View Online
+
+' PayPal
+
+ 
+
+You recently signed up for a PayPal account, but your
+account was never quite finished. Completing your
+account is just a step away.
+
+The Blue Button
+
+ 
+
+ 
+
+ 
+
+account is just a step away. o
+Continue signing up
+Style - 30 px
+EN TH JP KR ZH
+Headline Regular ltalic 69 #FFF Dharma Gothic E Regular 52 #FFF Regular 56 #FFF - 20 px
+Character limit: 20 per line max 3 lines 12 per line max 3 lines 8 per line max 3 lines
+Line Height: 60 64 58
+Letter Spacing: -1.2 Auto Auto
+24 px
+Image Desktop/Reader: Min-Width 698 px Height: 365 px
+Text: Regular 14 #ffffff center lowercase Height: 36 px BG Color: #0073BA
+CTA Button (Desktop/Reader) Left/Right Padding: 58 px (Mobile): Full width
+Character Limit: EN-30 TH-25 JP-16 KR-16 ZH-16 -
+58 px
+
+ 
+
+Body Text Text: Regular 13 #666666, System Sans Serif Fonts Desktop/Mobile Text Align: Left
+
+ 
+
+ 
+
+Note:
+
+- For localised fonts, please refer to the typography guide
+https://www.paypal-brandcentral.com/PayPal/Guidelines/Campaign-New-Money/Typography/
+- Character spacing are all set to auto unless otherwise specified
+
+
+
+*******************
+
+Confirm your email to start transacting.
+
+View Online
+
+H1 - STANDARD HERO BLOCK W/ EMBEDDED HEADLINE (TH) P PayFPal
+
+afiw‘luuawu :
+
+V]]Ji‘.IJLLGl\‘lLEN
+
+sw‘lmmwu "
+mﬂﬁmmmao
+
+ 
+
+las 19
+den 1y
+
+| ﬂ ,0 f] &I . mmwammuuammwlmwmnwmﬂua
+' LLEN1ULLQGWHIG]EIElﬂaiﬂuadlauaﬁﬁﬂﬁ]ilaﬁﬂmlﬂ
+
+1815051
+
+P =1
+o Inaaaiions 19 lundanil
+
+las (den
+°L°zfma¢LwamymuuammwlwmnwmﬂuawﬂmmmmiaﬂsuLLmslmLﬁquTﬂﬂ”L‘zﬁa‘[mtawmauaﬁsmmmﬂmlm
+luieslufiaan
+
+ 
+
+o 12 luusanil
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Style - 30 px
+EN TH JP KR zZH
+Headline Regular ltalic 69 #FFF Dharma Gothic E Regular 52 #FFF Regular 56 #FFF - 20 px
+Character limit: 20 per line max 3 lines 12 per line max 3 lines 8 per line max 3 lines
+Line Height: 60 64 58
+Letter Spacing: -1.2 Auto Auto
+24 px
+Image Desktop/Reader: Min-Width 698 px Height: 365 px
+Text: Regular 14 #ffffff center lowercase Height: 36 px BG Color: #0073BA
+CTA Button (Desktop/Reader) Left/Right Padding: 58 px (Mobile): Full width
+Character Limit: EN-30 TH-25 JP-16 KR-16 ZH-16
+Body Text Text: Regular 13 #666666, System Sans Serif Fonts Desktop/Mobile Text Align: Left
+Note:
+
+- For localised fonts, please refer to the typography guide
+https://www.paypal-brandcentral.com/PayPal/Guidelines/Campaign-New-Money/Typography/
+- Character spacing are all set to auto unless otherwise specified
+
+
+
+*******************
+
+H2 - HERO BLOCK W/ SEPARATE HEADLINE
+
+WELCOME 10 PAYPAL
+
+Congratulations, you’ve just joined millions of users who use PayPal for smarter, safer and faster payments.
+
+Add your credit or debit cards to your PayPal account — shopping in millions of stores worldwide
+
+ 
+
+Start setting up your account
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Style
+EN: Regular Italic 99 #009CDE Dharma Gothic E (transparent .png)
+. TH JP KR ZH : Regular 82 #009CDE (transparent .png)
+(image) Character Limit: EN-18 TH-12 JP-8 KR-8 ZH-8 (one line only)
+Hero Image Desktop/Reader: Width 698 px Height: 365 px
+Text: Regular 14 #ffffff center lowercase Height: 36 px BG Color: #0073BA
+CTA (Desktop/Reader) Left/Right Padding: 58 px (Mobile): Full width
+Character Limit: EN-30 TH-25 JP-20 KR-18 ZH-20
+Body Text Text: Regular 13 #666 Desktop Sans Serif Fonts
+Desktop/Mobile Text Align: center Character Limit: unlimited
+Note:
+
+- For localised fonts, please refer to the brand guidelines
+- Character spacing are all set to auto unless otherwise specified
+
+30 px
+
+24 px
+
+20 px
+
+44 px
+
+Confirm your email to start transacting.
+
+View Online
+
+' PayPal
+
+WELGOME 0 PAYPAL.
+
+Congratulations, you've just joined millions of users who
+use PayPal for smarter, safer and faster payments.
+
+Add your credit or debit cards to your PayPal account —
+shopping in millions of stores worldwide and in India is
+just a click away.
+
+LR g o BT g1
+
+ 
+
+
+
+*******************
+
