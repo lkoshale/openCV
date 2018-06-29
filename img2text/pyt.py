@@ -130,7 +130,7 @@ def check_font_name(word):
 
 def check_module(word):
     for md in module_names:
-        if word in md:
+        if  md in word:
             return True
 
     return False
@@ -168,10 +168,14 @@ def parse_line(line_list):
     if check_langs(line_list[1]):
         start=2
         all_lang = line_list[1].split(' ')
+        for ln in all_lang:
+            dict_array.append({"lang":ln})
 
-    
 
+    all_lang_counter= 0
     for line in line_list[start:]:
+        all_lang_counter = 0
+        current_langs = []
         current_module = ""
         current_sub_module = ""
         i=0
@@ -181,6 +185,9 @@ def parse_line(line_list):
         flag_escape_next_two_word = False
 
         temp_dict = {}
+
+        if  len(all_lang)>0:
+            temp_dict = dict_array[all_lang_counter]
 
         for word in words:
             i+=1
@@ -194,6 +201,18 @@ def parse_line(line_list):
                 flag_escape_next_two_word = False
                 flag_escape_next_word = True
                 continue
+
+            if word in lang_list:
+                current_langs.append(word)
+                continue
+
+            #TODO Check hypen lang
+            lang_split = word.split('-')
+            if len(lang_split) > 0:
+                if lang_split[0] in lang_list:
+                    #extract and add langs specific code
+                    pass
+
 
 
             if word in font_list:
@@ -247,6 +266,12 @@ def parse_line(line_list):
                 print("not found any desired object word::: "+word)
             elif current_tupple[0] in temp_dict:
                 print("already present ignoring chenge next lang maybe")
+                if len(all_lang)>0:
+                    all_lang_counter+=1
+                    all_lang[all_lang_counter]
+
+
+
                 #if already present then add to next lang
 
             else :
@@ -262,6 +287,7 @@ def parse_line(line_list):
 st =""
 st.isdigit()
 # Print recognized text
+# text = tess.file_to_text('./pdf/one_page.pdf', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
 text = tess.file_to_text('./images/images_pdf1/image (2).jpg', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
 # print(text)
 note_index = text.find('Note:')
@@ -271,5 +297,5 @@ if note_index!=-1 and style_index!=-1:
     text = text[style_index:note_index]
     lines=text.split('\n')
     # print(lines)
-    print(parse_line(lines[:3]))
+    print(parse_line(lines[:5]))
 
