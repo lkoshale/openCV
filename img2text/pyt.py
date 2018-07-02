@@ -9,6 +9,11 @@ im1 = Image.open("im1.jpg")
 import re
 
 
+#Declare constants
+
+
+
+
 sepcific_words=['Auto','Full width','Mobile']
 lang_list = ['EN', 'TH', 'JP', 'KR', 'ZH']
 font_list = ['Regular','Bold','ltalic']
@@ -20,6 +25,8 @@ READER = "Reader"
 
 sub_module_names= ['character limit:','height:','line height:','width:','button','letter spacing:','text:','text align:','bg color:','min-width','padding:','left/right','desktop/mobile']
 module_names= ['Headline','Image','Text','CTA Button']
+
+possible_module_names= ['headline','image','cta button' , 'body text' ,'hero image','cta text link','cta','text text:']
 
 output_dict ={}
 
@@ -163,7 +170,7 @@ def get_dict_of_lang(dict_array,lang):
 
 
 def parse_headline(line_list):
-    print(line_list)
+    # print(line_list)
 
     all_lang = []
     dict_array = []
@@ -181,7 +188,7 @@ def parse_headline(line_list):
         current_sub_module = ""
         i = 0
         words = line.split(' ')
-        print(words)
+        # print(words)
         flag_escape_next_word = False
         flag_escape_next_two_word = False
 
@@ -259,7 +266,7 @@ def parse_headline(line_list):
 
             if not current_tupple :
                 print("not found any desired object word::: "+word)
-                print(current_sub_module)
+                # print(current_sub_module)
             elif current_tupple[0] in temp_dict:
                 print("already present ignoring chenge next lang maybe ")# +current_tupple[0]+" "+str(temp_dict) )
                 if len(all_lang)>1:
@@ -291,7 +298,7 @@ def parse_image(line_list):
         current_langs = []
         i=0
         words=line.split(' ')
-        print(words)
+        # print(words)
         flag_escape_next_word = False
         flag_escape_next_two_word = False
         temp_dict={}
@@ -356,7 +363,7 @@ def parse_cta_button(line_list):
         current_langs = []
         i = 0
         words = line.split(' ')
-        print(words)
+        # print(words)
         flag_escape_next_word = False
         flag_escape_next_two_word = False
 
@@ -469,7 +476,7 @@ def parse_body_text(line_list):
         current_langs = []
         i = 0
         words = line.split(' ')
-        print(words)
+        # print(words)
         flag_escape_next_word = False
         flag_escape_next_two_word = False
         temp_dict = {}
@@ -722,19 +729,86 @@ def parse_line(line_list):
 
 
 
+def select_call_function(function_name,line_list):
+   if function_name=='headline':
+      return parse_headline(line_list)
+   elif function_name=='body text':
+      return parse_body_text(line_list)
+   elif function_name =='cta' or function_name=='cta button' or function_name== 'cta text link' :
+       return parse_cta_button(line_list)
+   elif  function_name== 'image':
+       return  parse_image(line_list)
+   else:
+       return None
+
+def module_name_occurence(line):
+    for md in possible_module_names:
+        if md in line.lower():
+            return md
+    return None
+
+def parse_file(text):
+    result_array = []
+    note_index = text.find('Note:')
+    style_index = text.find('Style')
+    if note_index != -1 and style_index != -1:
+        print('[INFO ] File is getting ready to parsed :')
+        text = text[style_index+1:note_index]
+        # print(text)
+        lines = text.split('\n')
+
+        current_method=''
+        index=0
+        last_index=-1
+        for index in range(0,len(lines)):
+           md = module_name_occurence(lines[index])
+           if md=='headline':
+               current_method=md
+               last_index=0
+               continue
+
+           if md!=None and last_index>=0:
+               md_result = select_call_function(current_method,lines[last_index:index])
+               result_array.extend(md_result)
+               # print("[INFO] rturned: "+str())
+               if current_method=='image':
+                   current_method=md
+                   last_index=last_index+1
+               else:
+                  current_method=md
+                  last_index=index
+           else:
+               print("no module : "+lines[index])
+
+           if index==len(lines)-1:
+                md_result = select_call_function(current_method, lines[last_index:index])
+                result_array.extend(md_result)
+                # print("[INFO] rturned: " + str())
+    print("[INFO] result:"+str(result_array))
+
+
+
+
+
+
+
+
+
+
 st =""
 st.isdigit()
 # Print recognized text
 # text = tess.file_to_text('./pdf/one_page.pdf', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
 text = tess.file_to_text('./images/images_pdf1/image (2).jpg', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
 # print(text)
-note_index = text.find('Note:')
-style_index = text.find('Style')
-if note_index!=-1 and style_index!=-1:
-    print('string found')
-    text = text[style_index:note_index]
-    # print(text)
-    lines=text.split('\n')
-    # print(lines[12:16])
-    print(parse_body_text(lines[15:16]))
+parse_file(text)
+# note_index = text.find('Note:')
+# style_index = text.find('Style')
+# if note_index!=-1 and style_index!=-1:
+#     print('string found')
+#     text = text[style_index:note_index]
+#     # print(text)
+#     lines=text.split('\n')
+#     # print(lines[12:16])
+#     print(parse_body_text(lines[15:16]))
 
