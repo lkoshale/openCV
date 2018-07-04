@@ -16,7 +16,7 @@ import json
 
 
 sepcific_words=['Auto','Full width','Mobile']
-lang_list = ['EN', 'TH', 'JP', 'KR', 'ZH']
+lang_list = ['EN', 'TH', 'JP', 'KR', 'ZH','EN:']
 font_list = ['Regular','Bold','ltalic']
 font_name = ['Dharma Gothic','System Sans Serif Fonts']
 
@@ -28,6 +28,8 @@ sub_module_names= ['character limit:','height:','line height:','width:','button'
 module_names= ['Headline','Image','Text','CTA Button']
 
 possible_module_names= ['headline','image','cta button' , 'body text' ,'hero image','cta text link','cta','text text:']
+
+exclude_module_false = ['(image)']
 
 output_dict ={}
 
@@ -145,16 +147,23 @@ def check_sub_module(word):
 def extract_char_limit(line):
     pass
 
-def check_langs(line):
+
+def check_lang_list(line):
     words = line.split(' ')
     for word in words:
-        if word in lang_list:
-            return True
-        else:
-            for lang in lang_list:
-                if word in lang:
-                    return True
+        if not check_langs(word):
             return False
+    return True
+
+
+def check_langs(word):
+    if word in lang_list:
+        return True
+    else:
+        for lang in lang_list:
+            if word in lang:
+                return True
+        return False
 
 
 def get_dict_of_lang(dict_array,lang):
@@ -179,7 +188,7 @@ def parse_headline(line_list):
     dict_array = []
     start = 0
     current_module = "Headline"
-    if check_langs(line_list[0]):
+    if check_lang_list(line_list[0]):
         start = 1
         all_lang = line_list[0].split(' ')
         for ln in all_lang:
@@ -202,6 +211,9 @@ def parse_headline(line_list):
 
         if len(all_lang) > 0 :
             temp_dict = dict_array[all_lang_counter]
+
+        if len(all_lang)==0 and len(dict_array)>0:
+            temp_dict = dict_array[0]
 
         i = 0
         for word in words:
@@ -255,13 +267,19 @@ def parse_headline(line_list):
             elif current_sub_module == 'Character limit:':
                 # TODO HARDEST PART
                 #Loop for the line extract till next
-                for ind in range(i-1,len(words)):
-                    if words[ind-1].isdigit() and ind+1<len(words) and words[ind]=='per':
-                        current_tupple.append('Character limit:')
-                        current_tupple.append(words[ind-1])
-                    if words[ind]=='lines':
-                        num_of_escapes=5
-                        break
+                if word.split('-')[0] in lang_list:
+                    current_langs=[]
+                    current_langs.append(word.split('-')[0])
+                    current_tupple.append('Character limit:')
+                    current_tupple.append(word.split('-')[1])
+                else:
+                    for ind in range(i-1,len(words)):
+                        if words[ind-1].isdigit() and ind+1<len(words) and words[ind]=='per':
+                            current_tupple.append('Character limit:')
+                            current_tupple.append(words[ind-1])
+                        if words[ind]=='lines':
+                            num_of_escapes=5
+                            break
 
             elif current_sub_module == 'Letter Spacing:' and (float_regex.match(word) or word == 'Auto'):
                 current_tupple.append("Letter Spacing")
@@ -280,6 +298,13 @@ def parse_headline(line_list):
             elif check_font_name(word):
                 current_tupple.append("font_name")
                 current_tupple.append(word)
+            elif i==len(words)-1 and len(all_lang)==0:
+                for lng in current_langs:
+                    if 'lang' not in temp_dict:
+                        temp_dict['lang']=lng
+                    else:
+                        td ={'lang':lng}
+                        dict_array.append('lng')
 
             if not current_tupple :
                 print("not found any desired object word::: "+word+" "+current_sub_module)
@@ -484,11 +509,29 @@ def parse_cta_button(line_list):
                 print("already present ignoring chenge next lang maybe "+current_tupple[0]+" ")  # +current_tupple[0]+" "+str(temp_dict)
 
                 # if already present then add to next lang
+                if len(current_langs)>0:
+                    for l in current_langs:
+                        t_d = {}
+                        t_d['lang']=l
+                        t_d[current_tupple[0]]=current_tupple[1].split('-')[1]
+                        dict_array.append(t_d)
+
+                    current_langs=[] #empty it
+
             else:
                 temp_dict[current_tupple[0]] = current_tupple[1]
 
         if temp_dict not in dict_array:
             dict_array.append(temp_dict)
+
+    last_dict ={}
+    for td in dict_array:
+        if 'module_name' in td:
+            last_dict=td
+        else:
+            for key in last_dict.keys():
+                if key not in td:
+                    td[key]=last_dict[key]
 
     return dict_array
 
@@ -768,6 +811,9 @@ def select_call_function(function_name,line_list):
        return None
 
 def module_name_occurence(line):
+    for not_md in exclude_module_false:
+        if not_md in line.lower():
+            return None
     for md in possible_module_names:
         if md in line.lower():
             return md
@@ -785,7 +831,7 @@ def parse_file(text):
         lines = text.split('\n')[1:]
 
         current_method=''
-        last_index=-1
+        last_index=0
         for index in range(0,len(lines)):
            md = module_name_occurence(lines[index])
            if md=='headline':
@@ -793,7 +839,9 @@ def parse_file(text):
                last_index=0
                continue
 
-           if md!=None and last_index>=0:
+           if md!=None :
+               if current_method=='':
+                   current_method='headline'
                md_result = select_call_function(current_method,lines[last_index:index])
                result_array.extend(md_result)
                # print("[INFO] rturned: "+str())
@@ -825,7 +873,7 @@ st =""
 st.isdigit()
 # Print recognized text
 # text = tess.file_to_text('./pdf/one_page.pdf', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
-text = tess.file_to_text('./images/images_pdf1/image (3).jpg', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
+text = tess.file_to_text('./images/images_pdf1/image (2).jpg', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
 # print(text)
 parse_file(text)
 # note_index = text.find('Note:')
