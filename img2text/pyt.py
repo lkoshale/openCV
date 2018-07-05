@@ -1,7 +1,4 @@
 
-import cv2
-import numpy as np
-import sys
 # import pytesseract
 import tesserocr as  tess
 from PIL import Image
@@ -24,12 +21,14 @@ MOBILE = "Mobile"
 DESKTOP = "Desktop"
 READER = "Reader"
 
-sub_module_names= ['character limit:','height:','line height:','width:','button','letter spacing:','text:','text align:','bg color:','min-width','padding:','left/right','desktop/mobile']
+sub_module_names= ['character limit:','height:','line height:','width:','button','letter spacing:','text:','text align:','bg color:','min-width','max-width','padding:','left/right','desktop/mobile']
 module_names= ['Headline','Image','Text','CTA Button']
 
 possible_module_names= ['headline','image','cta button' , 'body text' ,'hero image','cta text link','cta','text text:']
 
 exclude_module_false = ['(image)']
+
+exclude_sub_module = ['max','min']
 
 output_dict ={}
 
@@ -138,6 +137,10 @@ def check_module(word):
     return False
 
 def check_sub_module(word):
+
+    if word in exclude_sub_module:
+        return False
+
     for md in sub_module_names:
         if word.lower() in md:
             return True
@@ -175,6 +178,12 @@ def get_dict_of_lang(dict_array,lang):
     return None
 
 
+def check_return_lang_obj(lang,array):
+    for d in array:
+        if 'lang' in d and d['lang']==lang:
+            return d
+
+    return None
 
 
 #***************************************************************************************#
@@ -182,8 +191,6 @@ def get_dict_of_lang(dict_array,lang):
 
 
 def parse_headline(line_list):
-    # print(line_list)
-
     all_lang = []
     dict_array = []
     start = 0
@@ -258,20 +265,24 @@ def parse_headline(line_list):
             elif word.isdigit() and current_sub_module == 'Line Height:':
                 current_tupple.append("Line Height")
                 current_tupple.append(word)
-            elif word.isdigit() and i < len(words) and words[i].strip() != 'px' and words[i]!='per':
-                current_tupple.append("font_size")
-                current_tupple.append(word)
-            elif word.isdigit() and i < len(words) and words[i].strip() == 'px' and current_sub_module == '':
-                # check before word if its a attribute add else ignore
-                continue
-            elif current_sub_module == 'Character limit:':
+            elif current_sub_module.lower() == 'character limit:':
                 # TODO HARDEST PART
                 #Loop for the line extract till next
-                if word.split('-')[0] in lang_list:
+                if word.split('-')[0] in lang_list and len(word.split('-'))>1:
+                    dc = check_return_lang_obj(word.split('-')[0],dict_array)
+                    if dc!=None:
+                        dc['Character limit:']=word.split('-')[1]
+                        continue
+                elif len(current_langs)>0 and word.isdigit():
+                    for ln in current_langs:
+                        if 'lang' in temp_dict and temp_dict['lang']!='':
+                            td = {'lang':ln,'Character limit:':word}
+                            dict_array.append(td)
+                        else:
+                            temp_dict['lang']=ln
+                            temp_dict['Character limit:']=word
+
                     current_langs=[]
-                    current_langs.append(word.split('-')[0])
-                    current_tupple.append('Character limit:')
-                    current_tupple.append(word.split('-')[1])
                 else:
                     for ind in range(i-1,len(words)):
                         if words[ind-1].isdigit() and ind+1<len(words) and words[ind]=='per':
@@ -280,6 +291,13 @@ def parse_headline(line_list):
                         if words[ind]=='lines':
                             num_of_escapes=5
                             break
+
+            elif word.isdigit() and i < len(words) and words[i].strip() != 'px' and words[i]!='per':
+                current_tupple.append("font_size")
+                current_tupple.append(word)
+            elif word.isdigit() and i < len(words) and words[i].strip() == 'px' and current_sub_module == '':
+                # check before word if its a attribute add else ignore
+                continue
 
             elif current_sub_module == 'Letter Spacing:' and (float_regex.match(word) or word == 'Auto'):
                 current_tupple.append("Letter Spacing")
@@ -303,27 +321,34 @@ def parse_headline(line_list):
                     if 'lang' not in temp_dict:
                         temp_dict['lang']=lng
                     else:
-                        td ={'lang':lng}
-                        dict_array.append('lng')
+                        print('lang already present')
 
             if not current_tupple :
                 print("not found any desired object word::: "+word+" "+current_sub_module)
                 # print(current_sub_module)
             elif current_tupple[0] in temp_dict:
-                print("already present ignoring chenge next lang maybe ")#+current_tupple[0]+" "+str(temp_dict) )
+                print("already present ignoring chenge next lang maybe "+current_tupple[0]+" "+str(temp_dict) )
                 if len(all_lang)>1:
                     all_lang_counter+=1
                     temp_dict = dict_array[all_lang_counter]
                     temp_dict[current_tupple[0]] = current_tupple[1]
                     if 'module_name' not in temp_dict:
                         temp_dict['module_name']= current_module
+                elif len(current_langs)>=1:
+                    for ln in current_langs:
+                        td={'lang':ln}
+                        dict_array.append(td)
+                    temp_dict = dict_array[1]
+                    temp_dict[current_tupple[0]] = current_tupple[1]
+                    if 'module_name' not in temp_dict:
+                        temp_dict['module_name']= current_module
+
                 else:
                     print("Single lang still repeated key")
-
-
-                #if already present then add to next lang
             else :
                 temp_dict[current_tupple[0]]=current_tupple[1]
+                if 'module_name' not in temp_dict:
+                    temp_dict['module_name'] = current_module
 
         if temp_dict not in dict_array:
             dict_array.append(temp_dict)
@@ -409,9 +434,9 @@ def parse_cta_button(line_list):
     current_module = "CTA Button"
     temp_dict = {}
     for line in line_list:
-
+        # current_langs=[]
         current_sub_module = ""
-        current_langs = []
+
         i = 0
         words = line.split(' ')
         # print(words)
@@ -429,17 +454,17 @@ def parse_cta_button(line_list):
                 flag_escape_next_two_word = False
                 flag_escape_next_word = True
                 continue
-
-            if word in lang_list:
-                current_langs.append(word)
-                continue
-
-            lang_split = word.split('-')
-            if len(lang_split) > 0:
-                if lang_split[0] in lang_list:
-                    # extract and add langs specific code
-                    current_langs.append(lang_split[0])
-                    pass
+            #
+            # if word in lang_list:
+            #     current_langs.append(word)
+            #     continue
+            #
+            # lang_split = word.split('-')
+            # if len(lang_split) > 0:
+            #     if lang_split[0] in lang_list:
+            #         # extract and add langs specific code
+            #         current_langs.append(lang_split[0])
+            #         pass
 
             if word == 'Text:':
                 continue
@@ -474,11 +499,15 @@ def parse_cta_button(line_list):
             elif word.isdigit() and i < len(words) and words[i].strip() == 'px' and current_sub_module == '':
                 # check before word if its a attribute add else ignore
                 continue
-            elif current_sub_module == 'Character limit:':
-                # current_tupple.append("")
-                # current_tupple.append(word)
-                # TODO HARDEST PART
-                break
+            elif current_sub_module == 'Character Limit:':
+                if word.split('-')[0] in lang_list and len(word.split('-'))>1:
+                    if 'lang' in temp_dict:
+                        td={'lang':word.split('-')[0],"Character Limit":word.split('-')[1]}
+                        dict_array.append(td)
+                    else:
+                        temp_dict['lang']=word.split('-')[0]
+                        temp_dict["Character Limit"]=word.split('-')[1]
+
             elif current_sub_module != '' and i < len(words) and words[i] == 'px':
                 current_tupple.append(current_sub_module)
                 current_tupple.append(word + " px")
@@ -508,15 +537,15 @@ def parse_cta_button(line_list):
             elif current_tupple[0] in temp_dict:
                 print("already present ignoring chenge next lang maybe "+current_tupple[0]+" ")  # +current_tupple[0]+" "+str(temp_dict)
 
-                # if already present then add to next lang
-                if len(current_langs)>0:
-                    for l in current_langs:
-                        t_d = {}
-                        t_d['lang']=l
-                        t_d[current_tupple[0]]=current_tupple[1].split('-')[1]
-                        dict_array.append(t_d)
-
-                    current_langs=[] #empty it
+                # # if already present then add to next lang
+                # if len(current_langs)>0:
+                #     for l in current_langs:
+                #         t_d = {}
+                #         t_d['lang']=l
+                #         t_d[current_tupple[0]]=current_tupple[1].split('-')[1]
+                #         dict_array.append(t_d)
+                #
+                #     current_langs=[] #empty it
 
             else:
                 temp_dict[current_tupple[0]] = current_tupple[1]
@@ -628,6 +657,143 @@ def parse_body_text(line_list):
 
     return dict_array
 
+
+def parse_module_text(line_list):
+    dict_array = []
+    current_module = "Text"
+    temp_dict = {}
+    for line in line_list:
+        current_langs=[]
+        current_sub_module = ""
+
+        i = 0
+        words = line.split(' ')
+
+        flag_escape_next_word = False
+        flag_escape_next_two_word = False
+
+        for word in words:
+            i += 1
+            current_tupple = []
+            if flag_escape_next_word:
+                flag_escape_next_word = False
+                continue
+
+            if flag_escape_next_two_word:
+                flag_escape_next_two_word = False
+                flag_escape_next_word = True
+                continue
+            #
+            if word in lang_list:
+                current_langs.append(word)
+                continue
+            #
+            # lang_split = word.split('-')
+            # if len(lang_split) > 0:
+            #     if lang_split[0] in lang_list:
+            #         # extract and add langs specific code
+            #         current_langs.append(lang_split[0])
+            #         pass
+
+            if word == 'Text:':
+                continue
+
+            if word == 'Text':
+                current_tupple.append("module_name")
+                current_tupple.append(word )
+                current_module = word
+
+            elif check_module(word):
+                current_tupple.append("module_name")
+                current_tupple.append(word)
+            elif check_sub_module(word) and i < len(words) and check_sub_module(words[i]):
+                current_sub_module = word + " " + words[i]
+                flag_escape_next_word = True
+                continue
+                # no tuuple here
+            elif check_sub_module(word):
+                current_sub_module = word
+                continue
+            elif word in font_list and i < len(words) and words[i] in font_list:
+                current_tupple.append("font")
+                current_tupple.append(word + " " + words[i])
+                flag_escape_next_word = True
+            elif word in font_list:
+                current_tupple.append("font")
+                current_tupple.append(word)
+            elif word.isdigit() and i < len(words) and words[i].strip() != 'px':
+                current_tupple.append("font_size")
+                current_tupple.append(word)
+            elif word.isdigit() and i < len(words) and words[i].strip() == 'px' and current_sub_module == '':
+                # check before word if its a attribute add else ignore
+                continue
+            elif current_sub_module == 'Character Limit:':
+                if len(current_langs) > 0 and word.isdigit():
+                    for ln in current_langs:
+                        if 'lang' in temp_dict and temp_dict['lang'] != "":
+                            td = {'lang': ln, 'Character limit:': word}
+                            dict_array.append(td)
+                        else:
+                            temp_dict['lang'] = ln
+                            temp_dict['Character limit:'] = word
+
+
+            elif current_sub_module != '' and i < len(words) and words[i] == 'px':
+                current_tupple.append(current_sub_module)
+                current_tupple.append(word + " px")
+                flag_escape_next_word = True
+            elif current_sub_module != '':
+                current_tupple.append(current_sub_module)
+                current_tupple.append(word)
+            elif hex_color.match(word) != None:
+                current_tupple.append("font_color")
+                current_tupple.append(word)
+            elif check_font_name(word) and i < len(words) and i + 1 < len(words) and check_font_name(
+                    words[i]) and check_font_name(words[i + 1]):
+                current_tupple.append("font_name")
+                current_tupple.append(word + " " + words[i] + " " + words[i + 1])
+                flag_escape_next_two_word = True
+            elif check_font_name(word) and i < len(words) and check_font_name(words[i]):
+                current_tupple.append("font_name")
+                current_tupple.append(word + " " + words[i])
+                flag_escape_next_word = True
+            elif check_font_name(word):
+                current_tupple.append("font_name")
+                current_tupple.append(word)
+
+            if not current_tupple:
+                print("not found any desired object word::: " + word)
+                print(current_sub_module)
+            elif current_tupple[0] in temp_dict:
+                print("already present ignoring chenge next lang maybe " + current_tupple[
+                    0] + " ")  # +current_tupple[0]+" "+str(temp_dict)
+
+                # # if already present then add to next lang
+                # if len(current_langs)>0:
+                #     for l in current_langs:
+                #         t_d = {}
+                #         t_d['lang']=l
+                #         t_d[current_tupple[0]]=current_tupple[1].split('-')[1]
+                #         dict_array.append(t_d)
+                #
+                #     current_langs=[] #empty it
+
+            else:
+                temp_dict[current_tupple[0]] = current_tupple[1]
+
+        if temp_dict not in dict_array:
+            dict_array.append(temp_dict)
+
+    last_dict = {}
+    for td in dict_array:
+        if 'module_name' in td:
+            last_dict = td
+        else:
+            for key in last_dict.keys():
+                if key not in td:
+                    td[key] = last_dict[key]
+
+    return dict_array
 
 
 #***************************************************************************************#
@@ -807,6 +973,8 @@ def select_call_function(function_name,line_list):
        return parse_cta_button(line_list)
    elif  function_name== 'image':
        return  parse_image(line_list)
+   elif function_name == 'text text:':
+       return parse_module_text(line_list)
    else:
        return None
 
@@ -873,7 +1041,7 @@ st =""
 st.isdigit()
 # Print recognized text
 # text = tess.file_to_text('./pdf/one_page.pdf', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
-text = tess.file_to_text('./images/images_pdf1/image (2).jpg', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
+text = tess.file_to_text('./images/images_pdf1/image (7).jpg', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
 # print(text)
 parse_file(text)
 # note_index = text.find('Note:')
