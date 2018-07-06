@@ -1,0 +1,23 @@
+pages that are faulty :
+
+	4 
+	5
+	6 Desktop : sans
+
+	12 - font name ="" 29 
+	14 empty font name in text bug- 18
+
+
+	 19 20 - error text fn empty multi el
+	 21 - lil bit extra woeds 27
+
+	 44 bg md split
+
+
+total collapse: 31 34 35 36  ,
+
+no style 56 57  collapse  58
+
+53 not able to parse alignment
+
+59 extra fields
