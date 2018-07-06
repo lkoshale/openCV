@@ -20,7 +20,7 @@ READER = "Reader"
 sub_module_names= ['character limit:','height:','line height:','width:','button','letter spacing:','text:','text align:','bg color:','min-width','max-width','padding:','left/right','desktop/mobile']
 module_names= ['Headline','Image','Text','CTA Button']
 
-possible_module_names= ['headline','image','cta button' , 'body text' ,'hero image','cta text link','cta','text text:','background color']
+possible_module_names= ['headline','image','cta button' , 'body text' ,'hero image','cta text link','cta','text text:','text desktop text:','background color','alignment']
 
 exclude_module_false = ['(image)']
 
@@ -65,9 +65,6 @@ class OCR:
             self.text = None
             print("cant find the values")
             return -1
-
-
-
 
     def __str__(self):
         return "Parser Object for parsing images"
@@ -202,6 +199,8 @@ def is_there_2_text(lines):
 
 
 def parse_headline(line_list):
+    if len(line_list)==0:
+        return []
     all_lang = []
     dict_array = []
     start = 0
@@ -587,6 +586,7 @@ def parse_cta_button(line_list):
 def parse_body_text(line_list):
     dict_array = []
     current_module = "Body Text"
+    temp_dict = {}
     for line in line_list:
         current_sub_module = ""
         current_langs = []
@@ -595,7 +595,7 @@ def parse_body_text(line_list):
         # print(words)
         flag_escape_next_word = False
         flag_escape_next_two_word = False
-        temp_dict = {}
+
 
         for word in words:
             i += 1
@@ -717,10 +717,16 @@ def parse_module_text(line_list):
             if word == 'Text:':
                 continue
 
-            if word == 'Text':
+            if word =="Text" and i<len(words) and words[i].lower()=='desktop':
+                current_tupple.append("module_name")
+                current_tupple.append(word)
+                current_module = word
+                flag_escape_next_word=True
+            elif word == 'Text':
                 current_tupple.append("module_name")
                 current_tupple.append(word )
                 current_module = word
+
 
             elif check_module(word):
                 current_tupple.append("module_name")
@@ -835,6 +841,23 @@ def parse_backgound_color(line_list):
     return dict_array
 
 
+def parse_alignment(line_list):
+    dict_array = []
+    for line in line_list:
+        words= line.split('\n')
+        temp_dict = {}
+        i=0
+        for word in words:
+            i+=1
+            if word.lower == "alignment":
+                temp_dict['module_name']='Alignment'
+            elif word.lower == 'desktop/mobile' and i<len(words):
+                temp_dict['Desktop']=words[i]
+                temp_dict['Mobile']=words[i]
+            else:
+                print('[WARN} Not able to parse in alignment '+ word)
+        dict_array.append(temp_dict)
+    return dict_array
 #***************************************************************************************#
 
 # config = ('-l eng --oem 1 --psm 3')
@@ -1011,10 +1034,12 @@ def select_call_function(function_name,line_list):
        return parse_cta_button(line_list)
    elif  function_name== 'image':
        return  parse_image(line_list)
-   elif function_name == 'text text:':
+   elif function_name == 'text text:' or function_name == 'text desktop text:':
        return parse_module_text(line_list)
    elif function_name == 'background color':
        return parse_backgound_color(line_list)
+   elif function_name == 'alignment':
+       return parse_alignment(line_list)
    else:
        return None
 
@@ -1092,7 +1117,7 @@ st =""
 st.isdigit()
 # Print recognized text
 # text = tess.file_to_text('./pdf/one_page.pdf', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
-text = tess.file_to_text('./images/images_pdf1/image (2).jpg', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
+text = tess.file_to_text('./images/images_pdf1/image (4).jpg', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
 print(text)
 parse_file(text)
 # note_index = text.find('Note:')
