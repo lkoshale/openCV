@@ -1111,15 +1111,35 @@ def parse_file(text):
                 md_result = select_call_function(current_method, lines[last_index:index])
                 result_array.extend(md_result)
                 # print("[INFO] rturned: " + str())
-    print("[INFO] result:"+json.dumps(result_array) )
+    # print("[INFO] result:"+json.dumps(result_array) )
+    return json.dumps(result_array)
 
-st =""
-st.isdigit()
+
+def write_json_to_file():
+    file_path = './images/images_pdf1/'
+    f = open('out','a+')
+    f.write('[')
+    for i in range(2,6):
+        file = file_path+"image ("+str(i)+").jpg"
+        text = tess.file_to_text(file, lang='eng', psm=tess.PSM.AUTO,path='tessdata-master/')
+        jsn = parse_file(text)
+        f.write(jsn)
+        f.write(',')
+
+    f.write(']')
+    f.close()
+
+
 # Print recognized text
 # text = tess.file_to_text('./pdf/one_page.pdf', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
+
+
 text = tess.file_to_text('./images/images_pdf1/image (4).jpg', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
-print(text)
+# print(text)
 parse_file(text)
+
+
+
 # note_index = text.find('Note:')
 # style_index = text.find('Style')
 # if note_index!=-1 and style_index!=-1:
@@ -1131,5 +1151,4 @@ parse_file(text)
 #     print(parse_body_text(lines[15:16]))
 
 
-#TEXT PROBLEM AT IMG 7,14,24,28,27,32( text desktop text)
 
