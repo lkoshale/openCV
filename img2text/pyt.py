@@ -1,6 +1,6 @@
 
 # import pytesseract
-import tesserocr as  tess
+import tesserocr as tess
 from PIL import Image
 im1 = Image.open("im1.jpg")
 import re
@@ -8,10 +8,6 @@ import json
 
 
 #Declare constants
-
-
-
-
 sepcific_words=['Auto','Full width','Mobile']
 lang_list = ['EN', 'TH', 'JP', 'KR', 'ZH','EN:']
 font_list = ['Regular','Bold','ltalic']
@@ -24,21 +20,22 @@ READER = "Reader"
 sub_module_names= ['character limit:','height:','line height:','width:','button','letter spacing:','text:','text align:','bg color:','min-width','max-width','padding:','left/right','desktop/mobile']
 module_names= ['Headline','Image','Text','CTA Button']
 
-possible_module_names= ['headline','image','cta button' , 'body text' ,'hero image','cta text link','cta','text text:']
+possible_module_names= ['headline','image','cta button' , 'body text' ,'hero image','cta text link','cta','text text:','background color']
 
 exclude_module_false = ['(image)']
 
-exclude_sub_module = ['max','min']
+exclude_sub_module = ['max','min','limit']
 
 output_dict ={}
 
 hex_color = re.compile('^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$')
 float_regex = re.compile('(^[-+]?([0-9]+)(\.[0-9]+)?)$')
+alphabet_regex = re.compile('[a-z]')
 # string.isdigit() for checking number
 
 # print( hex_color.match("#fff"))
 
-class OCR :
+class OCR:
 
     # def __init__(self,imagePath,tessdatapath):
     #     self.imagePath = imagePath
@@ -184,6 +181,20 @@ def check_return_lang_obj(lang,array):
             return d
 
     return None
+
+def is_there_2_text(lines):
+    textc=0
+    last_index = 0
+    for ind in range(0,len(lines)):
+        if 'Text:' in lines[ind]:
+            textc+=1
+            last_index = ind
+    if textc>1:
+        return last_index
+    else:
+        return 0
+
+
 
 
 #***************************************************************************************#
@@ -406,6 +417,14 @@ def parse_image(line_list):
             elif check_sub_module(word):
                 current_sub_module = word
                 continue
+            elif current_sub_module=='' and word.isdigit() and i < len(words) and words[i] == 'x':
+                current_tupple.append('Height')
+                current_tupple.append(word)
+                flag_escape_next_word=True
+            elif current_sub_module=='' and word.isdigit() and words[i-2]=='x':
+                current_tupple.append('Width')
+                current_tupple.append(word)
+                flag_escape_next_word=True
             elif current_sub_module != '' and i < len(words) and words[i] == 'px':
                 current_tupple.append(current_sub_module)
                 current_tupple.append(word + " px")
@@ -493,9 +512,6 @@ def parse_cta_button(line_list):
             elif word in font_list:
                 current_tupple.append("font")
                 current_tupple.append(word)
-            elif word.isdigit() and i < len(words) and words[i].strip() != 'px' :
-                current_tupple.append("font_size")
-                current_tupple.append(word)
             elif word.isdigit() and i < len(words) and words[i].strip() == 'px' and current_sub_module == '':
                 # check before word if its a attribute add else ignore
                 continue
@@ -507,7 +523,9 @@ def parse_cta_button(line_list):
                     else:
                         temp_dict['lang']=word.split('-')[0]
                         temp_dict["Character Limit"]=word.split('-')[1]
-
+            elif word.isdigit() and i < len(words) and words[i].strip() != 'px' :
+                current_tupple.append("font_size")
+                current_tupple.append(word)
             elif current_sub_module != '' and i < len(words) and words[i] == 'px':
                 current_tupple.append(current_sub_module)
                 current_tupple.append(word + " px")
@@ -683,17 +701,18 @@ def parse_module_text(line_list):
                 flag_escape_next_two_word = False
                 flag_escape_next_word = True
                 continue
-            #
+
+            if not word.isdigit() and len(word)==1:
+                continue
+
             if word in lang_list:
                 current_langs.append(word)
                 continue
-            #
-            # lang_split = word.split('-')
-            # if len(lang_split) > 0:
-            #     if lang_split[0] in lang_list:
-            #         # extract and add langs specific code
-            #         current_langs.append(lang_split[0])
-            #         pass
+
+
+
+            if ',' in word:
+                word = word[0:len(word)-1]
 
             if word == 'Text:':
                 continue
@@ -706,12 +725,12 @@ def parse_module_text(line_list):
             elif check_module(word):
                 current_tupple.append("module_name")
                 current_tupple.append(word)
-            elif check_sub_module(word) and i < len(words) and check_sub_module(words[i]):
+            elif check_sub_module(word) and i < len(words) and check_sub_module(words[i]) and len(word)>1:
                 current_sub_module = word + " " + words[i]
                 flag_escape_next_word = True
                 continue
                 # no tuuple here
-            elif check_sub_module(word):
+            elif check_sub_module(word) and len(word)>1:
                 current_sub_module = word
                 continue
             elif word in font_list and i < len(words) and words[i] in font_list:
@@ -721,12 +740,6 @@ def parse_module_text(line_list):
             elif word in font_list:
                 current_tupple.append("font")
                 current_tupple.append(word)
-            elif word.isdigit() and i < len(words) and words[i].strip() != 'px':
-                current_tupple.append("font_size")
-                current_tupple.append(word)
-            elif word.isdigit() and i < len(words) and words[i].strip() == 'px' and current_sub_module == '':
-                # check before word if its a attribute add else ignore
-                continue
             elif current_sub_module == 'Character Limit:':
                 if len(current_langs) > 0 and word.isdigit():
                     for ln in current_langs:
@@ -737,6 +750,12 @@ def parse_module_text(line_list):
                             temp_dict['lang'] = ln
                             temp_dict['Character limit:'] = word
 
+            elif word.isdigit() and i < len(words) and words[i].strip() != 'px':
+                current_tupple.append("font_size")
+                current_tupple.append(word)
+            elif word.isdigit() and i < len(words) and words[i].strip() == 'px' and current_sub_module == '':
+                # check before word if its a attribute add else ignore
+                continue
 
             elif current_sub_module != '' and i < len(words) and words[i] == 'px':
                 current_tupple.append(current_sub_module)
@@ -761,22 +780,15 @@ def parse_module_text(line_list):
                 current_tupple.append("font_name")
                 current_tupple.append(word)
 
+            if i == len(words)-1 and 'module_name' not in temp_dict:
+                temp_dict['module_name']=current_module
+
             if not current_tupple:
                 print("not found any desired object word::: " + word)
                 print(current_sub_module)
             elif current_tupple[0] in temp_dict:
                 print("already present ignoring chenge next lang maybe " + current_tupple[
                     0] + " ")  # +current_tupple[0]+" "+str(temp_dict)
-
-                # # if already present then add to next lang
-                # if len(current_langs)>0:
-                #     for l in current_langs:
-                #         t_d = {}
-                #         t_d['lang']=l
-                #         t_d[current_tupple[0]]=current_tupple[1].split('-')[1]
-                #         dict_array.append(t_d)
-                #
-                #     current_langs=[] #empty it
 
             else:
                 temp_dict[current_tupple[0]] = current_tupple[1]
@@ -792,6 +804,33 @@ def parse_module_text(line_list):
             for key in last_dict.keys():
                 if key not in td:
                     td[key] = last_dict[key]
+
+    return dict_array
+
+
+def parse_backgound_color(line_list):
+
+    dict_array =[]
+    for line in line_list:
+
+        words = line.split(' ')
+        temp_dict = {}
+        flag_escape_next_word = False
+        for word in words:
+
+            if flag_escape_next_word:
+                flag_escape_next_word=False
+                continue
+
+            if word.lower() == 'background':
+                temp_dict['module_name']='Background Color'
+                flag_escape_next_word=True
+            elif hex_color.match(word)!=None:
+                temp_dict['color']=word
+            else:
+                print('[INFO} unkown word in background module')
+
+        dict_array.append(temp_dict)
 
     return dict_array
 
@@ -813,7 +852,6 @@ def parse_module_text(line_list):
 
 def parse_line(line_list):
     all_lang=[]
-
     dict_array = []
     # for each line
     flag_top_col_lang=False
@@ -975,6 +1013,8 @@ def select_call_function(function_name,line_list):
        return  parse_image(line_list)
    elif function_name == 'text text:':
        return parse_module_text(line_list)
+   elif function_name == 'background color':
+       return parse_backgound_color(line_list)
    else:
        return None
 
@@ -987,9 +1027,10 @@ def module_name_occurence(line):
             return md
     return None
 
+
 def parse_file(text):
     result_array = []
-    note_index = text.find('Note:')
+    note_index = text.find('Note')
     style_index = text.find('Style')
     if note_index != -1 and style_index != -1:
         print('[INFO ] File is getting ready to parsed :')
@@ -1000,7 +1041,9 @@ def parse_file(text):
 
         current_method=''
         last_index=0
+        invoked_methods_list = []
         for index in range(0,len(lines)):
+           ln = lines[index]
            md = module_name_occurence(lines[index])
            if md=='headline':
                current_method=md
@@ -1012,6 +1055,7 @@ def parse_file(text):
                    current_method='headline'
                md_result = select_call_function(current_method,lines[last_index:index])
                result_array.extend(md_result)
+               invoked_methods_list.append(current_method)
                # print("[INFO] rturned: "+str())
                if current_method=='image':
                    current_method=md
@@ -1023,26 +1067,33 @@ def parse_file(text):
                print("no module : "+lines[index])
 
            if index==len(lines)-1:
+               #repeat at end means text
+                if current_method=='image' and index-last_index>1:
+                    md_result = select_call_function(current_method, lines[last_index:last_index+1])
+                    result_array.extend(md_result)
+                    last_index=last_index+1
+                    invoked_methods_list.append(current_method)
+
+                ind = is_there_2_text(lines[last_index:index])
+                if ind > 0:
+                    md_result = select_call_function(current_method, lines[last_index:last_index+ind])
+                    result_array.extend(md_result)
+                    invoked_methods_list.append(current_method)
+                    last_index = last_index+ind
+
+                if current_method in invoked_methods_list:
+                   current_method = 'text text:'
                 md_result = select_call_function(current_method, lines[last_index:index])
                 result_array.extend(md_result)
                 # print("[INFO] rturned: " + str())
-    print("[INFO] result:"+json.dumps(str(result_array)) )
-
-
-
-
-
-
-
-
-
+    print("[INFO] result:"+json.dumps(result_array) )
 
 st =""
 st.isdigit()
 # Print recognized text
 # text = tess.file_to_text('./pdf/one_page.pdf', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
-text = tess.file_to_text('./images/images_pdf1/image (7).jpg', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
-# print(text)
+text = tess.file_to_text('./images/images_pdf1/image (2).jpg', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
+print(text)
 parse_file(text)
 # note_index = text.find('Note:')
 # style_index = text.find('Style')
@@ -1053,4 +1104,7 @@ parse_file(text)
 #     lines=text.split('\n')
 #     # print(lines[12:16])
 #     print(parse_body_text(lines[15:16]))
+
+
+#TEXT PROBLEM AT IMG 7,14,24,28,27,32( text desktop text)
 
