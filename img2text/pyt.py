@@ -257,6 +257,7 @@ def parse_headline(line_list):
                 current_langs.append(word)
                 continue
 
+
             if check_module(word):
                 current_tupple.append("module_name")
                 current_tupple.append(word)
@@ -273,6 +274,8 @@ def parse_headline(line_list):
                 current_tupple.append(word + " " + words[i])
                 flag_escape_next_word = True
             elif word in font_list:
+                if len(word)<2:
+                    continue
                 current_tupple.append("font")
                 current_tupple.append(word)
             elif word.isdigit() and current_sub_module == 'Line Height:':
@@ -306,6 +309,7 @@ def parse_headline(line_list):
                             break
 
             elif word.isdigit() and i < len(words) and words[i].strip() != 'px' and words[i] != 'per':
+
                 current_tupple.append("font_size")
                 current_tupple.append(word)
             elif word.isdigit() and i < len(words) and words[i].strip() == 'px' and current_sub_module == '':
@@ -328,6 +332,8 @@ def parse_headline(line_list):
                 current_tupple.append(word + " " + words[i])
                 flag_escape_next_word = True
             elif check_font_name(word):
+                if len(word) < 2:
+                    continue
                 current_tupple.append("font_name")
                 current_tupple.append(word)
             elif i == len(words) - 1 and len(all_lang) == 0:
@@ -490,7 +496,7 @@ def parse_cta_button(line_list):
             if word == 'Text:':
                 continue
 
-            if word == 'CTA':
+            if word == 'CTA' and i < len(words):
                 current_tupple.append("module_name")
                 current_tupple.append(word + " " + words[i])
                 current_module = word + " " + words[i]
@@ -1056,6 +1062,11 @@ def parse_file(text):
     result_array = []
     note_index = text.find('Note')
     style_index = text.find('Style')
+
+    if style_index==-1:
+        style_index = text.find('30 px')
+        print(style_index)
+
     if note_index != -1 and style_index != -1:
         print('[INFO ] File is getting ready to parsed :')
         text = text[style_index:note_index]
@@ -1111,19 +1122,59 @@ def parse_file(text):
                 result_array.extend(md_result)
                 # print("[INFO] rturned: " + str())
     # print("[INFO] result:"+json.dumps(result_array) )
-    return json.dumps(result_array)
+    updated_result_array =[]
+    for dt in result_array:
+        if not dt:
+            continue
+        # elif 'module_name' not in dt.keys():
+        #     continue
+        else:
+            updated_result_array.append(dt)
 
+    return updated_result_array
+
+def getPageName(text):
+    line_list = text.split('\n')
+
+    if len(line_list)>5 :
+        if line_list[0]=="Confirm your email to start transacting." :
+           for i in range(1,6):
+               if line_list[i]=='':
+                   continue
+               elif line_list[i]=='View Online':
+                   continue
+               else:
+                   return line_list[i]
+
+        elif line_list[0].strip()!='':
+            return line_list[0]
+        else:
+            return line_list[1]
+
+    return "NaN"
 
 def write_json_to_file():
     file_path = './images/images_pdf1/'
-    f = open('out', 'a+')
+    f = open('out.json', 'w+')
     f.write('[')
-    for i in range(2, 6):
+    pageID = 1
+    for i in range(54, 58):
         file = file_path + "image (" + str(i) + ").jpg"
         text = tess.file_to_text(file, lang='eng', psm=tess.PSM.AUTO, path='tessdata-master/')
-        jsn = parse_file(text)
-        f.write(jsn)
-        f.write(',')
+        array =[]
+        jsn={}
+        try:
+         array = parse_file(text)
+        except Exception as inst:
+            pass
+        finally:
+            jsn['page_id']=str(pageID)
+            pageID+=1
+            jsn['page_name']=getPageName(text)
+            jsn['page_info'] = array
+            f.write(json.dumps(jsn))
+            f.write(',')
+
 
     f.write(']')
     f.close()
@@ -1133,9 +1184,10 @@ def write_json_to_file():
 # text = tess.file_to_text('./pdf/one_page.pdf', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
 
 
-text = tess.file_to_text('./images/images_pdf1/image (4).jpg', lang='eng', psm=tess.PSM.AUTO, path='tessdata-master/')
-# print(text)
-parse_file(text)
+text = tess.file_to_text('./images/images_pdf1/image (27).jpg', lang='eng', psm=tess.PSM.AUTO, path='tessdata-master/')
+print(text)
+print(parse_file(text))
+# write_json_to_file()
 
 # note_index = text.find('Note:')
 # style_index = text.find('Style')
