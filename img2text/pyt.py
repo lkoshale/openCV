@@ -16,14 +16,15 @@ READER = "Reader"
 
 sub_module_names = ['character limit:', 'height:', 'line height:', 'width:', 'button', 'letter spacing:', 'text:',
                     'text align:', 'bg color:', 'min-width', 'max-width', 'padding:', 'left/right', 'desktop/mobile']
-module_names = ['Headline', 'Image', 'Text', 'CTA Button']
 
-possible_module_names = ['headline', 'image', 'cta button', 'body text', 'hero image', 'cta text link', 'cta',
-                         'text text:', 'text desktop text:', 'background color', 'alignment']
+module_names = ['Headline', 'Image', 'Text', 'CTA Button','Price field text','Subhead','Firstname Lastname','Exclusive Text']
+
+possible_module_names = ['headline','haadline', 'image', 'cta button', 'body text', 'hero image', 'cta text link', 'cta',
+                         'text text:', 'text desktop text:', 'background color', 'alignment','border color','price field text','subhead','firstname lastname','exclusive text']
 
 exclude_module_false = ['(image)']
 
-exclude_sub_module = ['max', 'min', 'limit']
+exclude_sub_module = ['max', 'min', 'limit','char','to','on','ut','et','ut et','ng','desktop']
 
 output_dict = {}
 
@@ -130,14 +131,14 @@ def check_module(word):
     if word.lower() == "text:":
         return False
     for md in module_names:
-        if md in word:
+        if md.lower() in word.lower():
             return True
 
     return False
 
 
 def check_sub_module(word):
-    if word in exclude_sub_module:
+    if word.lower() in exclude_sub_module:
         return False
 
     for md in sub_module_names:
@@ -262,11 +263,15 @@ def parse_headline(line_list):
                 current_tupple.append("module_name")
                 current_tupple.append(word)
             elif check_sub_module(word) and i < len(words) and check_sub_module(words[i]):
+                if len(word) <= 2:
+                    continue
                 current_sub_module = word + " " + words[i]
                 flag_escape_next_word = True
                 continue
                 # no tuuple here
             elif check_sub_module(word):
+                if len(word) <= 2:
+                    continue
                 current_sub_module = word
                 continue
             elif word in font_list and i < len(words) and words[i] in font_list:
@@ -418,11 +423,15 @@ def parse_image(line_list):
                 current_tupple.append("module_name")
                 current_tupple.append(word)
             elif check_sub_module(word) and i < len(words) and check_sub_module(words[i]):
+                if len(word) <= 2:
+                    continue
                 current_sub_module = word + " " + words[i]
                 flag_escape_next_word = True
                 continue
                 # no tuuple here
             elif check_sub_module(word):
+                if len(word) <= 2:
+                    continue
                 current_sub_module = word
                 continue
             elif current_sub_module == '' and word.isdigit() and i < len(words) and words[i] == 'x':
@@ -505,11 +514,15 @@ def parse_cta_button(line_list):
                 current_tupple.append("module_name")
                 current_tupple.append(word)
             elif check_sub_module(word) and i < len(words) and check_sub_module(words[i]):
+                if len(word) <= 2:
+                    continue
                 current_sub_module = word + " " + words[i]
                 flag_escape_next_word = True
                 continue
                 # no tuuple here
             elif check_sub_module(word):
+                if len(word)<=2:
+                    continue
                 current_sub_module = word
                 continue
             elif word in font_list and i < len(words) and words[i] in font_list:
@@ -629,11 +642,15 @@ def parse_body_text(line_list):
                 current_tupple.append('Body Text')
                 flag_escape_next_two_word = True
             elif check_sub_module(word) and i < len(words) and check_sub_module(words[i]):
+                if len(word) <= 2:
+                    continue
                 current_sub_module = word + " " + words[i]
                 flag_escape_next_word = True
                 continue
                 # no tuuple here
             elif check_sub_module(word):
+                if len(word) <= 2:
+                    continue
                 current_sub_module = word
                 continue
             elif word in font_list and i < len(words) and words[i] in font_list:
@@ -738,11 +755,15 @@ def parse_module_text(line_list):
                 current_tupple.append("module_name")
                 current_tupple.append(word)
             elif check_sub_module(word) and i < len(words) and check_sub_module(words[i]) and len(word) > 1:
+                if len(word) <= 2:
+                    continue
                 current_sub_module = word + " " + words[i]
                 flag_escape_next_word = True
                 continue
                 # no tuuple here
             elif check_sub_module(word) and len(word) > 1:
+                if len(word) <= 2:
+                    continue
                 current_sub_module = word
                 continue
             elif word in font_list and i < len(words) and words[i] in font_list:
@@ -856,13 +877,22 @@ def parse_alignment(line_list):
             i += 1
             if word.lower == "alignment":
                 temp_dict['module_name'] = 'Alignment'
-            elif word.lower == 'desktop/mobile' and i < len(words):
+            elif (word.lower == 'desktop/mobile' or word.lower == 'desktop/mobile:') and i < len(words):
                 temp_dict['Desktop'] = words[i]
+                temp_dict['Mobile'] = words[i]
+            elif (word.lower() == 'mobile' or word.lower()=='mobile:') and i < len(words):
                 temp_dict['Mobile'] = words[i]
             else:
                 print('[WARN} Not able to parse in alignment ' + word)
         dict_array.append(temp_dict)
     return dict_array
+
+
+def parse_subhead(line_list):
+    pass
+
+def parse_firstname(line_list):
+    pass
 
 
 # ***************************************************************************************#
@@ -1028,7 +1058,6 @@ def parse_line(line_list):
 
     return dict_array
 
-
 def select_call_function(function_name, line_list):
     if function_name == 'headline':
         return parse_headline(line_list)
@@ -1044,6 +1073,8 @@ def select_call_function(function_name, line_list):
         return parse_backgound_color(line_list)
     elif function_name == 'alignment':
         return parse_alignment(line_list)
+    elif function_name == 'subhead':
+        return
     else:
         return None
 
@@ -1062,9 +1093,15 @@ def parse_file(text):
     result_array = []
     note_index = text.find('Note')
     style_index = text.find('Style')
+    headline_index = text.find('Headline')
+
+    if style_index > headline_index and headline_index!=-1:
+        style_index = headline_index-2
 
     if style_index==-1:
         style_index = text.find('30 px')
+        if style_index==-1:
+            style_index=1
         print(style_index)
 
     if note_index != -1 and style_index != -1:
@@ -1126,8 +1163,8 @@ def parse_file(text):
     for dt in result_array:
         if not dt:
             continue
-        # elif 'module_name' not in dt.keys():
-        #     continue
+        elif 'module_name' not in dt.keys():
+            continue
         else:
             updated_result_array.append(dt)
 
@@ -1156,9 +1193,9 @@ def getPageName(text):
 def write_json_to_file():
     file_path = './images/images_pdf1/'
     f = open('out.json', 'w+')
-    f.write('[')
+    write_array=[]
     pageID = 1
-    for i in range(54, 58):
+    for i in range(2, 60):
         file = file_path + "image (" + str(i) + ").jpg"
         text = tess.file_to_text(file, lang='eng', psm=tess.PSM.AUTO, path='tessdata-master/')
         array =[]
@@ -1172,21 +1209,88 @@ def write_json_to_file():
             pageID+=1
             jsn['page_name']=getPageName(text)
             jsn['page_info'] = array
-            f.write(json.dumps(jsn))
-            f.write(',')
+            write_array.append(jsn)
 
 
-    f.write(']')
+    f.write(json.dumps(write_array))
     f.close()
+
+
+def parse_headline2(line_list):
+    pass
+
+
+def select_method_to_parse(method,line_list):
+    pass
+
+
+
+def parse_file2(text):
+    lines = text.split('\n')
+
+    last_index=0
+    index=0
+    last_method = None
+    for index in range(0,len(lines)):
+        md = module_name_occurence(lines[index])
+
+        if lines[index]=='':
+            continue
+
+        if md.lower()=='headline':
+           last_index=0
+           last_method=md
+           continue
+
+        if 'cta' in md.lower():
+            select_method_to_parse(last_method, lines[last_index, index])
+            last_method = 'cta'
+            continue
+
+        if last_method=='cta':
+            # for lng in lang_list:
+                temp_index=0
+                for ls in lines[last_index:index]:
+                    ls_ind=0
+                    bool_break = False
+                    for lang in lang_list:
+                        if lang.lower() in ls.lower():
+                            temp_index=ls_ind
+                            bool_break=True
+                            break
+                        ls_ind+=1
+                    if bool_break:
+                        break
+
+                select_method_to_parse(last_method,lines[last_index,temp_index])
+                last_index = temp_index
+
+
+
+        if md != None:
+            select_method_to_parse(md,lines[last_index,index])
+            last_index=index
+            last_method=md
+            continue
+
+        if index==len(lines)-1:
+            select_method_to_parse(last_method,lines[last_index,index])
+
+
+
+
+
+
+
 
 
 # Print recognized text
 # text = tess.file_to_text('./pdf/one_page.pdf', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
 
 
-text = tess.file_to_text('./images/images_pdf1/image (27).jpg', lang='eng', psm=tess.PSM.AUTO, path='tessdata-master/')
+text = tess.file_to_text('./images/images_pdf3/image (3).jpg', lang='eng', psm=tess.PSM.AUTO, path='tessdata-master/')
 print(text)
-print(parse_file(text))
+# print(json.dumps(parse_file(text)))
 # write_json_to_file()
 
 # note_index = text.find('Note:')
