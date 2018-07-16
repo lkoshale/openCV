@@ -20,13 +20,12 @@ sub_module_names = ['character limit:', 'height:', 'line height:', 'width:', 'bu
 module_names = ['Headline', 'Image', 'Text', 'CTA Button','Price field text','Subhead','Firstname Lastname','Exclusive Text']
 
 possible_module_names = ['headline','haadline', 'image', 'cta button', 'body text', 'hero image', 'cta text link', 'cta',
-                         'text text:', 'text desktop text:', 'background color', 'alignment','border color','price field text','subhead','firstname lastname','exclusive text']
+                         'text text:', 'text desktop text:', 'background color','background', 'alignment','border color','price field text','subhead','firstname lastname','exclusive text','dividing line']
 
 exclude_module_false = ['(image)']
 
 exclude_sub_module = ['max', 'min', 'limit','char','to','on','ut','et','ut et','ng','desktop']
 
-output_dict = {}
 
 hex_color = re.compile('^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$')
 float_regex = re.compile('(^[-+]?([0-9]+)(\.[0-9]+)?)$')
@@ -148,8 +147,7 @@ def check_sub_module(word):
     return False
 
 
-def extract_char_limit(line):
-    pass
+
 
 
 def check_lang_list(line):
@@ -1074,9 +1072,9 @@ def select_call_function(function_name, line_list):
     elif function_name == 'alignment':
         return parse_alignment(line_list)
     elif function_name == 'subhead':
-        return
+        return []
     else:
-        return None
+        return []
 
 
 def module_name_occurence(line):
@@ -1102,7 +1100,7 @@ def parse_file(text):
         style_index = text.find('30 px')
         if style_index==-1:
             style_index=1
-        print(style_index)
+
 
     if note_index != -1 and style_index != -1:
         print('[INFO ] File is getting ready to parsed :')
@@ -1216,16 +1214,77 @@ def write_json_to_file():
     f.close()
 
 
-def parse_headline2(line_list):
-    pass
+def extract_char_limit(lines):
+    ln=[]
+    ch=[]
+    for line in lines:
+        words=line.split(' ')
+        if len(words) < 3:
+            continue
+
+        if words[0].isdigit():
+            words=words[1:]
+        elif words[1].isdigit():
+            words=words[2:]
+
+        if words[-1].lower() == 'Unlimited'.lower() or words[-1].isdigit() or words[-1].lower()=='n/a':
+            ln.append(" ".join(words[:len(words)-1]))
+            ch.append(words[-1])
+        else:
+            if len(words) < 3:
+                continue
+            if check_langs(words[-2]):
+                ln.append(" ".join(words[:len(words) - 2]))
+                ch.append(words[-2]+" "+words[-1])
+            elif check_langs(words[-3]):
+                ln.append(" ".join(words[:len(words) - 3]))
+                ch.append(words[-3]+" "+words[-1])
+
+    if len(ln)==0:
+        return lines,ch
+    return ln,ch
 
 
-def select_method_to_parse(method,line_list):
-    pass
+
+
+
+def select_method_to_parse(function_name,line_list):
+
+    line_list, max_char = extract_char_limit(line_list)
+
+    print(line_list)
+    print(max_char)
+
+    if function_name=='headline'or function_name=='haadline':
+        return parse_headline(line_list)
+    elif function_name=='image':
+        return parse_image(line_list)
+    elif function_name == 'body text':
+        return parse_body_text(line_list)
+    elif function_name == 'cta' or function_name == 'cta button' or function_name == 'cta text link':
+        return parse_cta_button(line_list)
+    elif function_name == 'image':
+        return parse_image(line_list)
+    elif function_name == 'text text:' or function_name == 'text desktop text:':
+        return parse_module_text(line_list)
+    elif function_name == 'background color' or function_name=='background':
+        return parse_backgound_color(line_list)
+    elif function_name == 'alignment':
+        return parse_alignment(line_list)
+    elif function_name == 'subhead':
+        return []  #TODO
+    elif function_name == 'exclusive text':
+        return []
+    elif function_name== 'dividing line':
+        return []
+
+    return []
+
 
 
 
 def parse_file2(text):
+    result_array=[]
     lines = text.split('\n')
 
     last_index=0
@@ -1234,20 +1293,41 @@ def parse_file2(text):
     for index in range(0,len(lines)):
         md = module_name_occurence(lines[index])
 
-        if lines[index]=='':
+        if index == len(lines) - 1:
+            md_result=select_method_to_parse(last_method, lines[last_index:index])
+            result_array.extend(md_result)
+
+        if lines[index].strip()=='' and last_method==None:
+            last_index=index+1
             continue
 
-        if md.lower()=='headline':
-           last_index=0
+        if 'Style'.lower() in lines[index].lower():
+            last_index=index+1
+            continue
+
+        if 'desktop/reader &'.lower() in lines[index].lower():
+            last_index= index+1
+            continue
+
+        if md==None:
+            continue
+
+        if md.lower()=='headline' and last_method==None:
            last_method=md
            continue
 
-        if 'cta' in md.lower():
-            select_method_to_parse(last_method, lines[last_index, index])
-            last_method = 'cta'
+        if md != None and last_method == None:
+            last_method = md
             continue
 
-        if last_method=='cta':
+        if 'cta' in md.lower():
+            md_result=select_method_to_parse(last_method, lines[last_index: index])
+            result_array.extend(md_result)
+            last_method = 'cta'
+            last_index=index
+            continue
+
+        if md != None and last_method=='cta':
             # for lng in lang_list:
                 temp_index=0
                 for ls in lines[last_index:index]:
@@ -1262,23 +1342,21 @@ def parse_file2(text):
                     if bool_break:
                         break
 
-                select_method_to_parse(last_method,lines[last_index,temp_index])
+                if temp_index==0:
+                    temp_index=index
+                md_result=select_method_to_parse(last_method,lines[last_index:temp_index])
+                result_array.extend(md_result)
                 last_index = temp_index
 
 
 
         if md != None:
-            select_method_to_parse(md,lines[last_index,index])
+            md_result=select_method_to_parse(last_method,lines[last_index:index])
+            result_array.extend(md_result)
             last_index=index
             last_method=md
             continue
-
-        if index==len(lines)-1:
-            select_method_to_parse(last_method,lines[last_index,index])
-
-
-
-
+    print(result_array)
 
 
 
@@ -1288,8 +1366,9 @@ def parse_file2(text):
 # text = tess.file_to_text('./pdf/one_page.pdf', lang='eng',psm=tess.PSM.AUTO,path='tessdata-master/')
 
 
-text = tess.file_to_text('./images/images_pdf3/image (3).jpg', lang='eng', psm=tess.PSM.AUTO, path='tessdata-master/')
+text = tess.file_to_text('./images/images_pdf3/image (40).jpg', lang='eng', psm=tess.PSM.AUTO, path='tessdata-master/')
 print(text)
+parse_file2(text)
 # print(json.dumps(parse_file(text)))
 # write_json_to_file()
 
